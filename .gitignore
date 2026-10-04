@@ -1,0 +1,23 @@
+# secrets
+.env
+*.json.key
+service_account*.json
+
+# personal data
+resumes/*
+!resumes/.gitkeep
+
+# third-party Claude skill used while designing the UI (MIT, github.com/nextlevelbuilder/ui-ux-pro-max-skill)
+.claude/skills/
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# local runtime (normally lives in %LOCALAPPDATA%\NaukriJobAutomation, ignored here as a safety net)
+*.db
+*.db-journal
+logs/
+screenshots/
+browser_profile/

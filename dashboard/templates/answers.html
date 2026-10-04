@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Answers{% endblock %}
+{% block content %}
+<h1>Answers</h1>
+<p class="lead">Some jobs ask questions before you can apply. Save your answers here so the tool can fill them in. A job with a question that has no saved answer is left for you to apply by hand.</p>
+
+{% if answers %}
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Question</th><th>Your answer</th><th></th></tr></thead>
+      <tbody>
+        {% for item in answers %}
+        <tr>
+          <td>{{ item.question }}</td>
+          <td>{{ item.answer }}</td>
+          <td class="row-actions">
+            <form method="post" action="/answers/{{ item.id }}/delete"><button class="link danger">Delete</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<p class="empty">No saved answers yet.</p>
+{% endif %}
+
+<form method="post" action="/answers" class="card">
+  <h2>Add an answer</h2>
+  <label class="field">
+    <span>Question</span>
+    <input name="question" placeholder="e.g. Are you willing to relocate?" required>
+  </label>
+  <label class="field">
+    <span>Your answer</span>
+    <input name="answer" placeholder="e.g. Yes" required>
+  </label>
+  <p class="hint">Notice period, experience and salary are taken from your Profile, so you do not need to add them here.</p>
+  <div class="actions"><button class="btn">Add answer</button></div>
+</form>
+{% endblock %}

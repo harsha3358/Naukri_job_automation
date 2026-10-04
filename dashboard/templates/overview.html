@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_icons.html" import check_mark %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>{% if name %}Hi {{ name }}{% else %}Overview{% endif %}</h1>
+
+<div class="tiles">
+  <div class="tile"><span class="tile-value">{{ jobs_found }}</span><span class="tile-label">Jobs found</span></div>
+  <div class="tile"><span class="tile-value">{{ queued }}</span><span class="tile-label">Waiting to apply</span></div>
+  <div class="tile"><span class="tile-value">{{ applied }}</span><span class="tile-label">Applied in total</span></div>
+  <div class="tile"><span class="tile-value">{{ applied_today }} <small>/ {{ daily_cap }}</small></span><span class="tile-label">Applied today</span></div>
+  <div class="tile"><span class="tile-value">{{ needs_manual }}</span><span class="tile-label">Need you to apply</span></div>
+  <div class="tile"><span class="tile-value">{{ failed }}</span><span class="tile-label">Failed</span></div>
+</div>
+
+<section class="card">
+  <h2>Setup</h2>
+  <ul class="checklist">
+    {% for label, done, href in checklist %}
+    <li class="{{ 'done' if done else 'todo' }}">
+      {{ check_mark(done) }}
+      <span>{{ label }}</span>
+      {% if not done %}<a href="{{ href }}">Do this</a>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

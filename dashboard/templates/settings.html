@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block head %}{% if connecting %}<meta http-equiv="refresh" content="4; url=/settings">{% endif %}{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+<section class="card">
+  <h2>Naukri account</h2>
+  {% if connecting %}
+  <p class="status" role="status"><span class="spinner" aria-hidden="true"></span>A browser window is open on Naukri's login page. Log in there yourself, and do not close that window: it closes by itself a few seconds after you are in. The tool never sees or saves your password. This page then changes to Connected.</p>
+  <p class="banner warn">Log in with your email or mobile number and your Naukri password, or with "Use OTP to Login". Do not use "Continue with Google": Google refuses to sign in inside a window that a tool controls and shows "This browser or app may not be secure".</p>
+  {% else %}
+  <p>
+    {% if app_settings.naukri_connected_at %}<span class="badge on">Connected</span> <span class="muted">You logged in on {{ app_settings.naukri_connected_at | localtime }}.</span>
+    {% else %}<span class="badge off">Not connected</span>{% endif %}
+  </p>
+  <form method="post" action="/naukri/connect" class="actions">
+    <button class="btn{% if app_settings.naukri_connected_at %} ghost{% endif %}">{{ "Log in again" if app_settings.naukri_connected_at else "Connect Naukri" }}</button>
+  </form>
+  <p class="hint">A browser window opens on Naukri's login page and you log in there yourself, with your email or mobile number and your Naukri password or an OTP. "Continue with Google" does not work in that window, because Google refuses to sign in inside a window that a tool controls. The login stays saved in that window's own profile on this computer. Searching works without it. Applying needs it.</p>
+  {% endif %}
+</section>
+
+<form method="post" action="/settings" class="card">
+  <h2>Google Sheet</h2>
+  <label class="field">
+    <span>Google Sheet link</span>
+    <input name="sheet_url" type="url" value="{{ app_settings.sheet_url }}" placeholder="https://docs.google.com/spreadsheets/d/...">
+  </label>
+  <p class="hint">
+    To get a link: open <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a>, name the sheet, then copy the link from the browser's address bar.
+    {% if sheet_id %}<a href="{{ app_settings.sheet_url }}" target="_blank" rel="noopener">Open my Sheet</a>{% endif %}
+  </p>
+
+  <label class="field">
+    <span>Connection link</span>
+    <input name="sheet_webhook_url" type="url" value="{{ connection_link }}" placeholder="https://script.google.com/macros/s/.../exec" aria-describedby="connection-help">
+    <span id="connection-help" class="field-help">You get this link from the steps below. It lets the tool add rows to your Sheet.</span>
+  </label>
+  <p>
+    {% if sheet_connected %}<span class="badge on">Connected</span>
+      {% if sheet_waiting %}<span class="muted">{{ sheet_waiting }} application{{ "" if sheet_waiting == 1 else "s" }} still waiting to be sent. They are sent again by themselves, or use the button.</span>
+      {% else %}<span class="muted">Every application is on your Sheet.</span>{% endif %}
+    {% else %}<span class="badge off">Not connected</span>
+      <span class="muted">{% if sheet_waiting %}{{ sheet_waiting }} application{{ "" if sheet_waiting == 1 else "s" }} waiting. {% endif %}Applications are kept here and sent as soon as you connect.</span>
+    {% endif %}
+  </p>
+  {% if sheet_connected %}
+  <div class="actions"><button class="btn ghost" formaction="/settings/sheet/sync">Send everything to my Sheet now</button></div>
+  {% endif %}
+
+  <details class="how"{% if not sheet_connected %} open{% endif %}>
+    <summary>How to connect your Sheet (about 2 minutes, done once)</summary>
+    <p class="hint">Google does not let any tool write to a Sheet with only the Sheet's link. A small script, which you add to your own Sheet, receives the rows. It can only add and update rows on a tab called "Applications" in that one Sheet.</p>
+    <ol class="steps">
+      <li>Open your Sheet. In its menu, click <strong>Extensions</strong>, then <strong>Apps Script</strong>.</li>
+      <li>Delete whatever is in the editor, then paste the script from the box below. Click the save icon.</li>
+      <li>Click <strong>Deploy</strong>, then <strong>New deployment</strong>. Click the gear icon and choose <strong>Web app</strong>.</li>
+      <li>Set <strong>Execute as: Me</strong> and <strong>Who has access: Anyone</strong>. Click <strong>Deploy</strong>.</li>
+      <li>Google asks you to allow it: choose your account, click <strong>Advanced</strong>, then <strong>Go to (project name)</strong>, then <strong>Allow</strong>.</li>
+      <li>Copy the <strong>Web app URL</strong>, paste it into <strong>Connection link</strong> above, and click <strong>Save settings</strong>.</li>
+    </ol>
+    <label class="field">
+      <span>The script to paste</span>
+      <textarea id="sheet-script" rows="6" readonly spellcheck="false">{{ sheet_script }}</textarea>
+    </label>
+    <div class="actions"><button type="button" class="btn ghost" data-copy="sheet-script">Copy the script</button></div>
+    <p class="hint">Keep the connection link to yourself: anyone who has it could add rows to that Sheet.</p>
+  </details>
+
+  <h2>Applying</h2>
+  <fieldset class="choices">
+    <legend>What the tool does with jobs that are waiting</legend>
+    <label><input type="radio" name="apply_mode" value="dry_run"{% if app_settings.apply_mode != "real" %} checked{% endif %}> <span><strong>Practice run.</strong> Opens each job on Naukri and reports what it found. It never clicks Apply.</span></label>
+    <label><input type="radio" name="apply_mode" value="real"{% if app_settings.apply_mode == "real" %} checked{% endif %}> <span><strong>Real applications.</strong> Clicks Apply for you on Naukri, with the resume saved on your Naukri profile. An application cannot be taken back.</span></label>
+  </fieldset>
+  <div class="row">
+    <label class="field">
+      <span>Most jobs to apply to in one day</span>
+      <input name="daily_apply_cap" type="number" min="1" max="{{ max_cap }}" step="1" value="{{ app_settings.daily_apply_cap }}" required>
+    </label>
+    <label class="field">
+      <span>Lowest match score to apply (0 to 100)</span>
+      <input name="min_match_score" type="number" min="0" max="100" step="1" value="{{ app_settings.min_match_score }}" required>
+    </label>
+  </div>
+  <p class="hint">Naukri does not allow automated applying, and applying to many jobs quickly can get an account restricted. The daily limit cannot go above {{ max_cap }}, which is also Naukri's own limit for one day. Real applications are spaced 30 to 90 seconds apart.</p>
+  <div class="actions"><button class="btn">Save settings</button></div>
+</form>
+{% endblock %}

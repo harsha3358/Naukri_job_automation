@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_role_fields.html" import role_fields %}
+{% block title %}Edit role{% endblock %}
+{% block content %}
+<h1>Edit role</h1>
+
+<form method="post" action="/roles/{{ role.id }}" class="card">
+  {{ role_fields(role, job_age_choices) }}
+  <div class="actions">
+    <button class="btn">Save role</button>
+    <a class="btn ghost" href="/roles">Cancel</a>
+  </div>
+</form>
+{% endblock %}

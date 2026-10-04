@@ -1,0 +1,141 @@
+{% from "_icons.html" import check_mark, fonts, theme_boot, theme_toggle %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome · Naukri Job Automation</title>
+  <link rel="icon" href="/static/favicon.svg">
+  {{ theme_boot() }}
+  {{ fonts() }}
+  <link rel="stylesheet" href="/static/style.css?v={{ static_version }}">
+</head>
+<body>
+  {{ theme_toggle("floating") }}
+  <main class="welcome">
+    <div class="progress" role="progressbar" aria-label="Setup progress"
+         aria-valuemin="1" aria-valuemax="{{ step_count }}" aria-valuenow="{{ step_number }}">
+      <span style="--from: {{ (step_number - 1) * 100 // step_count }}%; --to: {{ step_number * 100 // step_count }}%"></span>
+    </div>
+    <p class="step-label">Step {{ step_number }} of {{ step_count }}</p>
+    {% if error %}<p class="banner bad" role="alert" tabindex="-1" autofocus>{{ error }}</p>{% endif %}
+
+    <section class="card stagger">
+    {% if step == "you" %}
+      <h1>Welcome to Naukri Job Automation</h1>
+      <p class="lead">This tool finds jobs on Naukri that fit you, applies for you, and keeps a record in your own Google Sheet. Setting it up takes about two minutes.</p>
+      <form method="post" action="/welcome">
+        <label class="field">
+          <span>What is your name?</span>
+          <input name="full_name" value="{{ profile.full_name }}" autocomplete="name" required autofocus>
+        </label>
+        <label class="field">
+          <span>Your email</span>
+          <input name="email" type="email" value="{{ profile.email }}" autocomplete="email" placeholder="you@example.com"{% if registration_on %} required{% endif %}>
+        </label>
+        <div class="row">
+          <label class="field">
+            <span>Years of work experience</span>
+            <input name="experience_years" type="number" min="0" max="50" step="0.5" value="{{ profile.experience_years | num }}" placeholder="0 if you are a fresher">
+          </label>
+          <label class="field">
+            <span>City you live in</span>
+            <input name="current_location" value="{{ profile.current_location }}" placeholder="e.g. Hyderabad">
+          </label>
+        </div>
+        {% if registration_on %}
+        <p class="note">When you click Continue, your <strong>name and email</strong> are sent to the maker of this tool, so they know who is using it. Nothing else is sent: not your CV, not your Naukri account, not your job applications. To send nothing, use Skip setup.</p>
+        {% endif %}
+        <div class="actions"><button class="btn">Continue</button></div>
+      </form>
+
+    {% elif step == "cv" %}
+      <h1>{% if first_name %}Nice to meet you, {{ first_name }}{% else %}Your CV{% endif %}</h1>
+      <p class="lead">Upload your CV. The tool reads your skills from it to judge which jobs fit you.</p>
+      {% if cv %}<p class="note">Already uploaded: <strong>{{ cv.original_name }}</strong>. Upload another to replace it, or skip.</p>{% endif %}
+      <form method="post" action="/welcome/cv" enctype="multipart/form-data">
+        <label class="field">
+          <span>CV file (PDF, DOCX or TXT, up to {{ max_cv_size_mb }} MB)</span>
+          <input type="file" name="file" accept=".pdf,.docx,.txt" required>
+        </label>
+        <p class="hint">The file is saved only on this computer.</p>
+        <div class="actions">
+          <button class="btn">Upload and continue</button>
+          <a class="btn ghost" href="/welcome/role">Skip this step</a>
+        </div>
+      </form>
+
+    {% elif step == "role" %}
+      <h1>Which job do you want?</h1>
+      <p class="lead">Type the job title you would search for on Naukri, and the cities you would work in.</p>
+      {% if roles %}<p class="note">Already added: <strong>{{ roles | map(attribute="role") | join(", ") }}</strong>. Add another, or skip.</p>{% endif %}
+      <form method="post" action="/welcome/role">
+        <label class="field">
+          <span>Job title</span>
+          <input name="role" placeholder="e.g. Frontend Developer" required autofocus>
+        </label>
+        <label class="field">
+          <span>Cities, separated by commas</span>
+          <input name="locations" placeholder="e.g. Hyderabad, Bangalore, Remote">
+        </label>
+        <p class="hint">You can add more roles and change these any time on the Roles page.</p>
+        <div class="actions">
+          <button class="btn">Save and continue</button>
+          <a class="btn ghost" href="/welcome/sheet">Skip this step</a>
+        </div>
+      </form>
+
+    {% elif step == "sheet" %}
+      <h1>Your Google Sheet</h1>
+      <p class="lead">Every job the tool applies to is written into a Google Sheet that you own. Here is how to get the link:</p>
+      <ol class="steps">
+        <li>Open <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a>. It creates a blank sheet in your Google account.</li>
+        <li>Give the sheet a name, for example <em>Naukri applications</em>.</li>
+        <li>Copy the link from the browser's address bar and paste it below.</li>
+      </ol>
+      <form method="post" action="/welcome/sheet">
+        <label class="field">
+          <span>Google Sheet link</span>
+          <input name="sheet_url" type="url" value="{{ sheet_url }}" placeholder="https://docs.google.com/spreadsheets/d/..." required autofocus>
+        </label>
+        <p class="hint">One more step lets the tool write to it. After setup, open <strong>Settings</strong> and follow "How to connect your Sheet". It takes about 2 minutes.</p>
+        <div class="actions">
+          <button class="btn">Save and continue</button>
+          <a class="btn ghost" href="/welcome/done">Skip this step</a>
+        </div>
+      </form>
+
+    {% else %}
+      <svg class="tick" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="24"/><path d="M15 27l8 8 15-17"/></svg>
+      <h1>You're set{% if first_name %}, {{ first_name }}{% endif %}</h1>
+      <ul class="checklist">
+        {% for label, done, where in [
+          ("Your name", profile.full_name, "Profile"),
+          ("CV", cv, "CV"),
+          ("Job title", roles, "Roles"),
+          ("Google Sheet link", app_settings.sheet_url, "Settings"),
+        ] %}
+        <li class="{{ 'done' if done else 'todo' }}">
+          {{ check_mark(done) }}
+          <span>{{ label }}</span>
+          {% if not done %}<span class="muted">Skipped. Add it later on the {{ where }} page.</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      <form method="post" action="/welcome/finish" class="actions">
+        <button class="btn" name="tour" value="1">Take a quick tour</button>
+        <button class="btn ghost">Go to the dashboard</button>
+      </form>
+    {% endif %}
+    </section>
+
+    {% if step != "done" %}
+    <form method="post" action="/welcome/finish" class="welcome-foot">
+      {% if back_url %}<a href="{{ back_url }}">Back</a>{% else %}<span></span>{% endif %}
+      <button class="link">Skip setup</button>
+    </form>
+    {% endif %}
+  </main>
+  <script src="/static/ui.js?v={{ static_version }}" defer></script>
+</body>
+</html>

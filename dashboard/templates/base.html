@@ -1,0 +1,47 @@
+{% from "_icons.html" import fonts, theme_boot, theme_toggle %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · Naukri Job Automation</title>
+  <link rel="icon" href="/static/favicon.svg">
+  {{ theme_boot() }}
+  {{ fonts() }}
+  <link rel="stylesheet" href="/static/style.css?v={{ static_version }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="topbar">
+    <a class="brand" href="/"><img src="/static/favicon.svg" alt="">Naukri Job Automation</a>
+    <nav aria-label="Main">
+      {% for key, label, href in [
+        ("overview", "Overview", "/"),
+        ("cv", "CV", "/cv"),
+        ("profile", "Profile", "/profile"),
+        ("roles", "Roles", "/roles"),
+        ("answers", "Answers", "/answers"),
+        ("jobs", "Jobs", "/jobs"),
+        ("settings", "Settings", "/settings"),
+      ] %}
+      <a href="{{ href }}" data-tour="{{ key }}"{% if active == key %} class="active" aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    {{ theme_toggle() }}
+  </header>
+
+  <main class="page" id="main">
+    {% if notice %}<p class="banner ok" role="status">{{ notice }}</p>{% endif %}
+    {% if error %}<p class="banner bad" role="alert" tabindex="-1" autofocus>{{ error }}</p>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="foot">
+    <a href="/?tour=1">Take the tour</a>
+    <a href="/welcome">Run setup again</a>
+  </footer>
+  <script src="/static/ui.js?v={{ static_version }}" defer></script>
+  <script src="/static/tour.js?v={{ static_version }}" defer></script>
+</body>
+</html>

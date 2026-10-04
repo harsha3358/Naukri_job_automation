@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+{% block head %}{% if searching or applying %}<meta http-equiv="refresh" content="4; url=/jobs">{% endif %}{% endblock %}
+{% block content %}
+<h1>Jobs</h1>
+<p class="lead">Every job the tool finds, best match first. Click a score to see the reasons behind it.</p>
+
+<section class="card">
+  <h2>Search</h2>
+  {% if searching %}
+  <p class="status" role="status"><span class="spinner" aria-hidden="true"></span>Searching Naukri. A browser window is open while the tool searches. Leave it alone and it closes by itself. This page updates when the search is done.</p>
+  {% else %}
+  <form method="post" action="/naukri/search" class="actions">
+    <button class="btn">Search Naukri now</button>
+  </form>
+  <p class="hint">Searches each role that is switched on, in each of its cities. A browser window opens for about a minute.</p>
+  {% endif %}
+
+  {% if last_search %}
+    {% if last_search.error %}
+    <p class="banner bad">The last search ({{ last_search.finished_at | localtime }}) did not finish. {{ last_search.error }}</p>
+    {% else %}
+    <p class="hint">Last search: {{ last_search.finished_at | localtime }}. Naukri listed {{ last_search.found }} jobs, {{ last_search.matched + last_search.skipped }} of them new to the tool.</p>
+      {% if last_search.failed %}
+      <p class="banner warn">Naukri answered "No result found" to {{ last_search.failed }} of the searches. Try the same search in your own browser. If you see jobs there, Naukri is treating the tool's browser as automated and is not showing it the real results. The tool does not try to get around that.</p>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Applying</h2>
+  {% if applying and real_mode %}
+  <p class="status" role="status"><span class="spinner" aria-hidden="true"></span>Applying. A browser window is open and the tool is sending real applications on Naukri, one at a time, 30 to 90 seconds apart. Leave the window alone and it closes by itself. Closing it stops the run.</p>
+  {% elif applying %}
+  <p class="status" role="status"><span class="spinner" aria-hidden="true"></span>Practice run in progress. A browser window is open and the tool is looking at each waiting job on Naukri. It does not click Apply. Leave the window alone and it closes by itself.</p>
+  {% elif not waiting %}
+  <p class="hint">No job is waiting to be applied to. Jobs wait here when they pass your filters and score at or above your cut-off.</p>
+  {% elif not connected %}
+  <p class="hint">{{ waiting }} job{{ "" if waiting == 1 else "s" }} waiting. <a href="/settings">Connect Naukri on the Settings page</a> first, so the tool can open them as you.</p>
+  {% elif real_mode and not left_today %}
+  <p class="hint">{{ waiting }} job{{ "" if waiting == 1 else "s" }} waiting, but today's limit is used up. Applying continues tomorrow.</p>
+  {% elif real_mode %}
+  <form method="post" action="/naukri/apply" class="actions">
+    <button class="btn">Apply to waiting jobs now</button>
+  </form>
+  <p class="hint"><strong>This sends real applications</strong> from your Naukri account, with the resume saved on your Naukri profile, best match first. {{ waiting }} waiting, {{ left_today }} left in today's limit. An application cannot be taken back. Jobs that are applied to on the company's own site are set aside with their link. To only practise, change the mode on the Settings page.</p>
+  {% else %}
+  <form method="post" action="/naukri/apply" class="actions">
+    <button class="btn">Practice run on {{ waiting }} waiting job{{ "" if waiting == 1 else "s" }}</button>
+  </form>
+  <p class="hint">Opens each waiting job on Naukri, as you, and checks how it can be applied to. For jobs that are applied to on the company's own site, it saves the company's link. It does <strong>not</strong> click Apply. To send real applications, change the mode on the Settings page.</p>
+  {% endif %}
+
+  {% if last_apply %}
+    {% if last_apply.error %}
+    <p class="banner bad">The last run ({{ last_apply.finished_at | localtime }}) stopped. {{ last_apply.error }}</p>
+    {% endif %}
+    <p class="hint">Last run: {{ last_apply.finished_at | localtime }}. Opened {{ last_apply.found }} job{{ "" if last_apply.found == 1 else "s" }}: {{ last_apply.applied }} applied, {{ last_apply.matched }} ready to apply (practice), {{ last_apply.skipped }} applied to on the company's site, {{ last_apply.failed }} with a problem.</p>
+  {% endif %}
+</section>
+
+{% if skip_groups %}
+<section class="card">
+  <h2>Why jobs were skipped</h2>
+  <ul class="reasons">
+    {% for group, count in skip_groups %}<li><strong>{{ count }}</strong> {{ group }}</li>{% endfor %}
+  </ul>
+  {% for tip in tips %}<p class="banner warn">{{ tip }}</p>{% endfor %}
+  <p class="hint">Each skipped job shows its own reason in the Status column. After you change your profile, a role or the cut-off, the jobs below are checked again by themselves.</p>
+</section>
+{% endif %}
+
+{% if jobs %}
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Job</th><th>Company</th><th>Location</th><th>Experience</th><th>Salary</th><th>Match</th><th>Status</th><th>Apply link</th></tr></thead>
+      <tbody>
+        {% for job in jobs %}
+        <tr>
+          <td>
+            {{ job.title }}
+            {% if job.is_demo %}<span class="badge">Sample</span>{% endif %}
+          </td>
+          <td>{{ job.company }}</td>
+          <td>{{ job.location }}</td>
+          <td>
+            {% if job.experience_min is not none and job.experience_max is not none %}{{ job.experience_min }}-{{ job.experience_max }} yrs
+            {% elif job.experience_min is not none %}{{ job.experience_min }}+ yrs
+            {% elif job.experience_max is not none %}Up to {{ job.experience_max }} yrs
+            {% else %}Not stated{% endif %}
+          </td>
+          <td>
+            {% if job.salary_min_lpa is not none and job.salary_max_lpa is not none %}{{ job.salary_min_lpa | num }}-{{ job.salary_max_lpa | num }} LPA
+            {% elif job.salary_max_lpa is not none %}Up to {{ job.salary_max_lpa | num }} LPA
+            {% elif job.salary_min_lpa is not none %}{{ job.salary_min_lpa | num }}+ LPA
+            {% else %}Not disclosed{% endif %}
+          </td>
+          <td>
+            {% if job.match_notes %}
+            <details class="why">
+              <summary>{% if job.match_score is none %}<span class="muted">Filtered out</span>{% else %}<span class="score">{{ job.match_score }}</span>{% endif %}</summary>
+              <ul>{% for note in job.match_notes %}<li>{{ note }}</li>{% endfor %}</ul>
+            </details>
+            {% elif job.match_score is not none %}<span class="score">{{ job.match_score }}</span>
+            {% else %}<span class="muted">Not scored</span>{% endif %}
+          </td>
+          <td>
+            <span class="badge state-{{ job.application.state }}">{{ state_labels.get(job.application.state, job.application.state) }}</span>
+            {% if job.id in skip_sentences %}<p class="reason">{{ skip_sentences[job.id] }}</p>
+            {% elif job.application.notes %}<p class="reason">{{ job.application.notes }}</p>{% endif %}
+          </td>
+          <td>
+            {% if job.company_apply_url %}<a href="{{ job.company_apply_url }}" target="_blank" rel="noopener">Apply on company site</a><br>{% endif %}
+            {% if job.url %}<a href="{{ job.url }}" target="_blank" rel="noopener">Open on Naukri</a>
+            {% elif not job.company_apply_url %}<span class="muted">None</span>{% endif %}
+            {% if job.application.state == "external" and not job.company_apply_url and job.url %}<p class="reason">Then click "Apply on company site" there.</p>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<p class="empty">No jobs yet. Use <strong>Search Naukri now</strong> above, or load sample jobs to see how matching works with your role and skills.</p>
+{% endif %}
+
+<div class="actions">
+  {% if has_demo %}
+  <form method="post" action="/jobs/demo/remove"><button class="btn ghost">Remove sample jobs</button></form>
+  {% else %}
+  <form method="post" action="/jobs/demo"><button class="btn ghost">Load sample jobs</button></form>
+  {% endif %}
+</div>
+<p class="hint">Sample jobs are made up from your own role and skills. The tool never applies to them and never writes them to your Google Sheet.</p>
+{% endblock %}

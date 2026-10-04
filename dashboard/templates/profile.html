@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1>Profile</h1>
+<p class="lead">These details decide which jobs match you and answer the questions recruiters ask while applying.</p>
+
+<form method="post" action="/profile" class="card">
+  <div class="row">
+    <label class="field"><span>Full name</span><input name="full_name" value="{{ profile.full_name }}" autocomplete="name"></label>
+    <label class="field"><span>City you live in</span><input name="current_location" value="{{ profile.current_location }}"></label>
+  </div>
+  <div class="row">
+    <label class="field"><span>Email</span><input name="email" type="email" value="{{ profile.email }}" autocomplete="email"></label>
+    <label class="field"><span>Phone</span><input name="phone" value="{{ profile.phone }}" autocomplete="tel"></label>
+  </div>
+  <div class="row">
+    <label class="field">
+      <span>Years of work experience</span>
+      <input name="experience_years" type="number" min="0" max="50" step="0.5" value="{{ profile.experience_years | num }}" placeholder="0 if you are a fresher">
+    </label>
+    <label class="field">
+      <span>Notice period, in days</span>
+      <input name="notice_period_days" type="number" min="0" max="365" step="1" value="{{ profile.notice_period_days | num }}" placeholder="0 if you can join right away">
+    </label>
+  </div>
+  <div class="row">
+    <label class="field">
+      <span>Current salary, in lakhs per year</span>
+      <input name="current_ctc_lpa" type="number" min="0" step="0.1" value="{{ profile.current_ctc_lpa | num }}" placeholder="Leave empty if none">
+    </label>
+    <label class="field">
+      <span>Expected salary, in lakhs per year</span>
+      <input name="expected_ctc_lpa" type="number" min="0" step="0.1" value="{{ profile.expected_ctc_lpa | num }}">
+    </label>
+  </div>
+  <label class="field">
+    <span>Skills, separated by commas</span>
+    <textarea name="skills" rows="3" placeholder="e.g. React, JavaScript, HTML, CSS">{{ profile.skills | join(", ") }}</textarea>
+  </label>
+  <label class="field">
+    <span>Education</span>
+    <textarea name="education" rows="3">{{ profile.education }}</textarea>
+  </label>
+  <div class="actions"><button class="btn">Save profile</button></div>
+</form>
+{% endblock %}

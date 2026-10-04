@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_role_fields.html" import role_fields %}
+{% block title %}Roles{% endblock %}
+{% block content %}
+<h1>Roles</h1>
+<p class="lead">The job titles the tool searches and applies for. Change them whenever you like.</p>
+
+{% if roles %}
+<section class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Job title</th><th>Cities</th><th>Lowest salary</th><th>Posted within</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for role in roles %}
+        <tr>
+          <td><strong>{{ role.role }}</strong></td>
+          <td>{{ role.locations | join(", ") or "Any" }}</td>
+          <td>
+            {% if role.min_salary_lpa is none %}Any{% else %}{{ role.min_salary_lpa | num }} LPA{% endif %}
+            {% if role.min_salary_lpa is not none and role.min_salary_lpa > max_salary %}
+            <p class="reason danger">This is in lakhs per year, so it rejects almost every job. For ₹50,000 a month, type 6. Click Edit to fix it.</p>
+            {% endif %}
+          </td>
+          <td>{{ role.max_job_age_days }} day{{ "" if role.max_job_age_days == 1 else "s" }}</td>
+          <td><span class="badge {{ 'on' if role.is_active else 'off' }}">{{ "On" if role.is_active else "Off" }}</span></td>
+          <td class="row-actions">
+            <a href="/roles/{{ role.id }}">Edit</a>
+            <form method="post" action="/roles/{{ role.id }}/toggle"><button class="link">{{ "Switch off" if role.is_active else "Switch on" }}</button></form>
+            <form method="post" action="/roles/{{ role.id }}/delete"><button class="link danger">Delete</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<p class="empty">No roles yet. Add the first one below.</p>
+{% endif %}
+
+<form method="post" action="/roles" class="card">
+  <h2>Add a role</h2>
+  {{ role_fields(none, job_age_choices) }}
+  <div class="actions"><button class="btn">Add role</button></div>
+</form>
+{% endblock %}

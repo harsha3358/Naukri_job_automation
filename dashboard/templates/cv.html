@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}CV{% endblock %}
+{% block content %}
+<h1>CV</h1>
+
+<section class="card">
+  <h2>Upload a CV</h2>
+  <form method="post" action="/cv/upload" enctype="multipart/form-data">
+    <label class="field">
+      <span>CV file (PDF, DOCX or TXT, up to {{ max_cv_size_mb }} MB)</span>
+      <input type="file" name="file" accept=".pdf,.docx,.txt" required>
+    </label>
+    <p class="hint">The newest upload becomes the active CV. The file is saved only on this computer.</p>
+    <div class="actions"><button class="btn">Upload</button></div>
+  </form>
+</section>
+
+{% if active_cv %}
+<section class="card">
+  <h2>Active CV</h2>
+  <p><strong>{{ active_cv.original_name }}</strong> <span class="muted">uploaded {{ active_cv.uploaded_at | localtime }}</span></p>
+  <h3>What the tool read from it</h3>
+  <dl class="facts">
+    <dt>Name</dt><dd>{{ active_cv.parsed.full_name or "Not found" }}</dd>
+    <dt>Email</dt><dd>{{ active_cv.parsed.email or "Not found" }}</dd>
+    <dt>Phone</dt><dd>{{ active_cv.parsed.phone or "Not found" }}</dd>
+    <dt>Experience</dt><dd>{% if active_cv.parsed.experience_years is none %}Not found{% else %}{{ active_cv.parsed.experience_years | num }} years{% endif %}</dd>
+    <dt>Education</dt><dd class="pre">{{ active_cv.parsed.education or "Not found" }}</dd>
+    <dt>Skills</dt>
+    <dd>
+      {% for skill in active_cv.parsed.skills %}<span class="chip">{{ skill }}</span>{% else %}Not found{% endfor %}
+    </dd>
+  </dl>
+  <p class="hint">Reading a CV is not perfect. Only empty profile fields were filled in. Use the button to replace your profile with these details, then correct anything on the Profile page.</p>
+  <div class="actions">
+    <form method="post" action="/cv/{{ active_cv.id }}/use-in-profile"><button class="btn ghost">Use these details in my profile</button></form>
+    <form method="post" action="/cv/{{ active_cv.id }}/delete"><button class="btn ghost danger">Delete this CV</button></form>
+  </div>
+</section>
+{% endif %}
+
+{% if other_cvs %}
+<section class="card">
+  <h2>Older CVs</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>File</th><th>Uploaded</th><th></th></tr></thead>
+      <tbody>
+        {% for cv in other_cvs %}
+        <tr>
+          <td>{{ cv.original_name }}</td>
+          <td>{{ cv.uploaded_at | localtime }}</td>
+          <td class="row-actions">
+            <form method="post" action="/cv/{{ cv.id }}/activate"><button class="link">Make active</button></form>
+            <form method="post" action="/cv/{{ cv.id }}/delete"><button class="link danger">Delete</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
