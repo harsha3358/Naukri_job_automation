@@ -4,7 +4,7 @@
  * Paste this into the Apps Script editor of YOUR Sheet (Extensions > Apps Script), deploy it as
  * a web app, and paste the web app link into the tool's Settings page. The tool then sends each
  * application here. One row per Naukri job: a job sent again updates its row, it is never added
- * twice. The full steps are on the tool's Settings page and in the README.
+ * twice. The full steps are on the tool's Settings page and in docs/GUIDE.md.
  */
 
 const TAB = "Applications";

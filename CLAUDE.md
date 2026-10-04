@@ -35,7 +35,9 @@ testability, GitHub readiness.
   in `.env` pointing at a throwaway folder, and delete `.env` afterwards.
 - UI text is for students, many not native English speakers: short plain sentences, no jargon.
 - A feature that is not built yet is labelled "not available in this version yet" in the UI
-  and README. Remove the label when the feature ships.
+  and listed as not built in README.md and docs/GUIDE.md. Update all three when it ships.
+- README.md is deliberately short and plain, written for a busy reader (the owner asked for
+  "a CEO writing to a CEO", not text-heavy). Step-by-step detail goes in docs/GUIDE.md.
 - Sample jobs (`jobs.is_demo`) must never be applied to or written to a Sheet.
 - UI changes follow the design tokens at the top of `dashboard/static/style.css`. For new UI
   work, use the `ui-ux-pro-max` skill in `.claude/skills/` (git-ignored, MIT).
